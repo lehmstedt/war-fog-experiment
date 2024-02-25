@@ -10,22 +10,54 @@ use opengl_graphics::{GlGraphics, OpenGL, Texture, TextureSettings};
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
 use piston::{window::*, MouseButton, MouseCursorEvent};
-use piston::input::{ButtonArgs, ButtonState, Button, Key, ButtonEvent};
+use piston::input::{ButtonArgs, ButtonState, Button, ButtonEvent};
 
-pub struct Position {
+pub struct Character {
+    position: Vec2D,
+    speed: Vec2D,
+    is_target_set: bool,
+    target_position: Vec2D
+}
+
+impl Character {
+
+    fn update_position(&mut self, dt: &f64){
+        self.position.x += self.speed.x * dt;
+        self.position.y += self.speed.y * dt;
+
+        if self.is_target_set && (self.position.x - self.target_position.x).abs() < 0.25 && (self.position.y - self.target_position.y).abs() < 0.25 {
+            self.unset_target();
+        }
+    }
+
+    fn unset_target(&mut self){
+        self.is_target_set = false;
+        self.speed.x = 0.0;
+        self.speed.y = 0.0;
+    }
+
+    fn set_target(&mut self, target_position: &Vec2D){
+        self.is_target_set = true;
+        self.target_position.x = target_position.x;
+        self.target_position.y = target_position.y;
+
+        let length = ((self.target_position.x - self.position.x).powi(2) + (self.target_position.y - self.position.y).powi(2)).sqrt();
+        self.speed.x = (self.target_position.x - self.position.x) / length * SPEED;
+        self.speed.y = (self.target_position.y - self.position.y) / length * SPEED;
+    }
+}
+
+pub struct Vec2D {
     x: f64,
     y: f64
 }
 
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
-    player_position: Position,
-    speed: Position,
-    cursor_position: Position,
-    target_position: Position,
+    player: Character,
+    cursor_position: Vec2D,
     textures: GameTextures,
-    is_target_set: bool,
-    camera_transform: Position
+    camera_transform: Vec2D
 }
 
 pub struct GameTextures {
@@ -49,7 +81,7 @@ impl App {
 
             let player_transform = c
                 .transform
-                .trans(self.player_position.x, self.player_position.y)
+                .trans(self.player.position.x, self.player.position.y)
                 .trans(self.textures.player.get_width() as f64 * - 0.5, self.textures.player.get_height() as f64 * - 0.5)
                 .trans(self.camera_transform.x, self.camera_transform.y);
 
@@ -63,10 +95,10 @@ impl App {
 
             image(&self.textures.map, map_transform, gl);
 
-            if self.is_target_set {
+            if self.player.is_target_set {
                 let target_transform = c
                 .transform
-                .trans(self.target_position.x, self.target_position.y)
+                .trans(self.player.target_position.x, self.player.target_position.y)
                 .trans(self.textures.target.get_width() as f64 * - 0.5 * size_factor, self.textures.target.get_height() as f64 * - 0.5 * size_factor)
                 .trans(self.camera_transform.x, self.camera_transform.y)
                 .scale(size_factor, size_factor);
@@ -80,42 +112,29 @@ impl App {
     }
 
     fn update(&mut self, args: &UpdateArgs) {
-        self.player_position.x += self.speed.x * args.dt;
-        self.player_position.y += self.speed.y * args.dt;
 
-        if self.is_target_set && (self.player_position.x - self.target_position.x).abs() < 0.25 && (self.player_position.y - self.target_position.y).abs() < 0.25 {
-            self.unset_target();
-        }
+        self.player.update_position(&args.dt);
+        
     }
 
     fn change_direction(&mut self, args: &ButtonArgs){
 
         if args.state == ButtonState::Press {
             match args.button {
-                Button::Keyboard(Key::Up) => self.speed.y -= SPEED,
-                Button::Keyboard(Key::Down) => self.speed.y += SPEED,
-                Button::Keyboard(Key::Left) => self.speed.x -= SPEED,
-                Button::Keyboard(Key::Right) => self.speed.x += SPEED,
-                Button::Mouse(MouseButton::Left) => self.set_target(),
+                Button::Mouse(MouseButton::Left) => self.set_player_target(),
                 _ => ()
             }
         }
     }
 
-    fn set_target(&mut self){
-        self.is_target_set = true;
-        self.target_position.x = self.cursor_position.x - self.camera_transform.x;
-        self.target_position.y = self.cursor_position.y - self.camera_transform.y;
+    fn set_player_target(&mut self){
 
-        let length = ((self.target_position.x - self.player_position.x).powi(2) + (self.target_position.y - self.player_position.y).powi(2)).sqrt();
-        self.speed.x = (self.target_position.x - self.player_position.x) / length * SPEED;
-        self.speed.y = (self.target_position.y - self.player_position.y) / length * SPEED;
-    }
+        let cursor_world_position = Vec2D {
+            x: self.cursor_position.x - self.camera_transform.x,
+            y: self.cursor_position.y - self.camera_transform.y
+        };
 
-    fn unset_target(&mut self){
-        self.is_target_set = false;
-        self.speed.x = 0.0;
-        self.speed.y = 0.0;
+        self.player.set_target(&cursor_world_position);
     }
 
     fn update_cursor_position(&mut self, args: &[f64]){
@@ -138,13 +157,15 @@ fn main() {
     // Create a new game and run it.
     let mut app = App {
         gl: GlGraphics::new(opengl),
-        player_position: Position { x: 0.0, y: 0.0 },
-        cursor_position: Position { x: 0.0, y: 0.0 },
-        target_position: Position { x: 0.0, y: 0.0 },
-        speed: Position { x: 0.0, y: 0.0 },
+        player: Character {
+            position: Vec2D { x: 0.0, y: 0.0 },
+            speed: Vec2D { x: 0.0, y: 0.0 },
+            is_target_set: false,
+            target_position: Vec2D { x: 0.0, y: 0.0 }
+        },
+        cursor_position: Vec2D { x: 0.0, y: 0.0 },
         textures: load_game_textures(),
-        is_target_set: false,
-        camera_transform: Position { x: 0.0, y: 0.0 }
+        camera_transform: Vec2D { x: 0.0, y: 0.0 }
     };
 
     let mut events = Events::new(EventSettings::new());
