@@ -9,7 +9,7 @@ use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{GlGraphics, OpenGL, Texture, TextureSettings};
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
-use piston::window::*;
+use piston::{window::*, MouseCursorEvent};
 use piston::input::{ButtonArgs, ButtonState, Button, Key, ButtonEvent};
 
 pub struct Position {
@@ -65,6 +65,13 @@ impl App {
             }
         }
     }
+
+    fn change_move_goal(&mut self, args: &[f64]){
+
+        let length = ((args[0] - self.position.x).powi(2) + (args[1] - self.position.y).powi(2)).sqrt();
+        self.speed.x = (args[0] - self.position.x) / length * SPEED;
+        self.speed.y = (args[1] - self.position.y) / length * SPEED;
+    }
 }
 
 fn main() {
@@ -98,7 +105,10 @@ fn main() {
         }
 
         if let Some(args) = e.button_args(){
-            app.change_direction(&args)
+            app.change_direction(&args);
+        }
+        if let Some(args) = e.mouse_cursor_args(){
+            app.change_move_goal(&args);
         }
     }
 }
