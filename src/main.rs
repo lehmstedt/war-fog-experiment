@@ -23,7 +23,8 @@ pub struct App {
     speed: Position,
     cursor_position: Position,
     target_position: Position,
-    textures: GameTextures
+    textures: GameTextures,
+    is_target_set: bool
 }
 
 pub struct GameTextures {
@@ -49,23 +50,30 @@ impl App {
 
             let size_factor = 0.25;
 
-            let target_transform = c
+            image(&self.textures.map, c.transform, gl);
+
+            if self.is_target_set {
+                let target_transform = c
                 .transform
                 .trans(self.target_position.x, self.target_position.y)
                 .trans(self.textures.target.get_width() as f64 * - 0.5 * size_factor, self.textures.target.get_height() as f64 * - 0.5 * size_factor)
                 .scale(size_factor, size_factor);
 
-
-            image(&self.textures.map, c.transform, gl);
+                image(&self.textures.target, target_transform, gl);
+            }
 
             image(&self.textures.player, player_transform, gl);
-            image(&self.textures.target, target_transform, gl);
+            
         });
     }
 
     fn update(&mut self, args: &UpdateArgs) {
         self.player_position.x += self.speed.x * args.dt;
         self.player_position.y += self.speed.y * args.dt;
+
+        if self.is_target_set && (self.player_position.x - self.target_position.x).abs() < 0.25 && (self.player_position.y - self.target_position.y).abs() < 0.25 {
+            self.unset_target();
+        }
     }
 
     fn change_direction(&mut self, args: &ButtonArgs){
@@ -82,12 +90,19 @@ impl App {
     }
 
     fn set_target(&mut self){
+        self.is_target_set = true;
         self.target_position.x = self.cursor_position.x;
         self.target_position.y = self.cursor_position.y;
 
         let length = ((self.target_position.x - self.player_position.x).powi(2) + (self.target_position.y - self.player_position.y).powi(2)).sqrt();
         self.speed.x = (self.target_position.x - self.player_position.x) / length * SPEED;
         self.speed.y = (self.target_position.y - self.player_position.y) / length * SPEED;
+    }
+
+    fn unset_target(&mut self){
+        self.is_target_set = false;
+        self.speed.x = 0.0;
+        self.speed.y = 0.0;
     }
 
     fn update_cursor_position(&mut self, args: &[f64]){
@@ -114,7 +129,8 @@ fn main() {
         cursor_position: Position { x: 0.0, y: 0.0 },
         target_position: Position { x: 0.0, y: 0.0 },
         speed: Position { x: 0.0, y: 0.0 },
-        textures: load_game_textures()
+        textures: load_game_textures(),
+        is_target_set: false
     };
 
     let mut events = Events::new(EventSettings::new());
