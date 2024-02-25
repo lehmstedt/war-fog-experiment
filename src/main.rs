@@ -24,7 +24,8 @@ pub struct App {
     cursor_position: Position,
     target_position: Position,
     textures: GameTextures,
-    is_target_set: bool
+    is_target_set: bool,
+    camera_transform: Position
 }
 
 pub struct GameTextures {
@@ -43,20 +44,31 @@ impl App {
 
             clear([1.0, 1.0, 1.0, 1.0], gl);
 
+            self.camera_transform.x = args.window_size[0] / 2.0;
+            self.camera_transform.y = args.window_size[1] / 2.0;
+
             let player_transform = c
                 .transform
                 .trans(self.player_position.x, self.player_position.y)
-                .trans(self.textures.player.get_width() as f64 * - 0.5, self.textures.player.get_height() as f64 * - 0.5);
+                .trans(self.textures.player.get_width() as f64 * - 0.5, self.textures.player.get_height() as f64 * - 0.5)
+                .trans(self.camera_transform.x, self.camera_transform.y);
 
             let size_factor = 0.25;
 
-            image(&self.textures.map, c.transform, gl);
+            let map_transform = c
+                .transform
+                .trans(0.0, 0.0)
+                .trans(self.textures.map.get_width() as f64 * - 0.5, self.textures.map.get_height() as f64 * - 0.5)
+                .trans(self.camera_transform.x, self.camera_transform.y);
+
+            image(&self.textures.map, map_transform, gl);
 
             if self.is_target_set {
                 let target_transform = c
                 .transform
                 .trans(self.target_position.x, self.target_position.y)
                 .trans(self.textures.target.get_width() as f64 * - 0.5 * size_factor, self.textures.target.get_height() as f64 * - 0.5 * size_factor)
+                .trans(self.camera_transform.x, self.camera_transform.y)
                 .scale(size_factor, size_factor);
 
                 image(&self.textures.target, target_transform, gl);
@@ -77,6 +89,7 @@ impl App {
     }
 
     fn change_direction(&mut self, args: &ButtonArgs){
+
         if args.state == ButtonState::Press {
             match args.button {
                 Button::Keyboard(Key::Up) => self.speed.y -= SPEED,
@@ -91,8 +104,8 @@ impl App {
 
     fn set_target(&mut self){
         self.is_target_set = true;
-        self.target_position.x = self.cursor_position.x;
-        self.target_position.y = self.cursor_position.y;
+        self.target_position.x = self.cursor_position.x - self.camera_transform.x;
+        self.target_position.y = self.cursor_position.y - self.camera_transform.y;
 
         let length = ((self.target_position.x - self.player_position.x).powi(2) + (self.target_position.y - self.player_position.y).powi(2)).sqrt();
         self.speed.x = (self.target_position.x - self.player_position.x) / length * SPEED;
@@ -130,7 +143,8 @@ fn main() {
         target_position: Position { x: 0.0, y: 0.0 },
         speed: Position { x: 0.0, y: 0.0 },
         textures: load_game_textures(),
-        is_target_set: false
+        is_target_set: false,
+        camera_transform: Position { x: 0.0, y: 0.0 }
     };
 
     let mut events = Events::new(EventSettings::new());
