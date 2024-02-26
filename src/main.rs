@@ -11,6 +11,7 @@ use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
 use piston::{window::*, MouseButton, MouseCursorEvent};
 use piston::input::{ButtonArgs, ButtonState, Button, ButtonEvent};
+use vec2d::Vec2D;
 
 mod character;
 mod vec2d;
@@ -19,6 +20,7 @@ mod vec2d;
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
     player: character::Character,
+    scout: character::Character,
     cursor_position: vec2d::Vec2D,
     textures: GameTextures,
     camera_transform: vec2d::Vec2D
@@ -26,6 +28,7 @@ pub struct App {
 
 pub struct GameTextures {
     player: Texture,
+    scout: Texture,
     target: Texture,
     map: Texture
 }
@@ -41,22 +44,29 @@ impl App {
             self.camera_transform.x = args.window_size[0] / 2.0;
             self.camera_transform.y = args.window_size[1] / 2.0;
 
-            let player_transform = c
-                .transform
-                .trans(self.player.position.x, self.player.position.y)
-                .trans(self.textures.player.get_width() as f64 * - 0.5, self.textures.player.get_height() as f64 * - 0.5)
-                .trans(self.camera_transform.x, self.camera_transform.y);
+            
 
-            let size_factor = 0.25;
-
+            
+            // MAP
             let map_transform = c
                 .transform
-                .trans(0.0, 0.0)
                 .trans(self.textures.map.get_width() as f64 * - 0.5, self.textures.map.get_height() as f64 * - 0.5)
                 .trans(self.camera_transform.x, self.camera_transform.y);
 
             image(&self.textures.map, map_transform, gl);
 
+            // SCOUT
+            let size_factor = 0.25;
+            let scout_transform = c
+                .transform
+                .trans(self.scout.position.x, self.scout.position.y)
+                .trans(self.textures.scout.get_width() as f64 * - 0.5 * size_factor, self.textures.scout.get_height() as f64 * - 0.5 * size_factor)
+                .trans(self.camera_transform.x, self.camera_transform.y)
+                .scale(size_factor, size_factor);
+
+            image(&self.textures.scout, scout_transform, gl);
+
+            // TARGET
             if self.player.is_target_set {
                 let target_transform = c
                 .transform
@@ -68,6 +78,12 @@ impl App {
                 image(&self.textures.target, target_transform, gl);
             }
 
+            // PLAYER
+            let player_transform = c
+                .transform
+                .trans(self.player.position.x, self.player.position.y)
+                .trans(self.textures.player.get_width() as f64 * - 0.5, self.textures.player.get_height() as f64 * - 0.5)
+                .trans(self.camera_transform.x, self.camera_transform.y);
             image(&self.textures.player, player_transform, gl);
             
         });
@@ -76,6 +92,7 @@ impl App {
     fn update(&mut self, args: &UpdateArgs) {
 
         self.player.update_position(&args.dt);
+        self.scout.update_position(&args.dt);
         
     }
 
@@ -83,20 +100,24 @@ impl App {
 
         if args.state == ButtonState::Press {
             match args.button {
-                Button::Mouse(MouseButton::Left) => self.set_player_target(),
+                Button::Mouse(MouseButton::Left) => {
+                    let cursor_world_position = self.get_cursor_world_position();
+                    self.player.set_target(&cursor_world_position);
+                },
+                Button::Mouse(MouseButton::Right) => {
+                    let cursor_world_position = self.get_cursor_world_position();
+                    self.scout.set_target(&cursor_world_position);
+                },
                 _ => ()
             }
         }
     }
 
-    fn set_player_target(&mut self){
-
-        let cursor_world_position = vec2d::Vec2D {
+    fn get_cursor_world_position(&mut self) -> Vec2D {
+        Vec2D {
             x: self.cursor_position.x - self.camera_transform.x,
             y: self.cursor_position.y - self.camera_transform.y
-        };
-
-        self.player.set_target(&cursor_world_position);
+        }
     }
 
     fn update_cursor_position(&mut self, args: &[f64]){
@@ -120,6 +141,7 @@ fn main() {
     let mut app = App {
         gl: GlGraphics::new(opengl),
         player: character::new(),
+        scout: character::new(),
         cursor_position: vec2d::new(),
         textures: load_game_textures(),
         camera_transform: vec2d::new()
@@ -147,6 +169,7 @@ fn main() {
 fn load_game_textures() -> GameTextures{
     GameTextures {
         player: load_texture_from_path("./assets/rust.png"),
+        scout: load_texture_from_path("./assets/scout.png"),
         target: load_texture_from_path("./assets/target.png"),
         map: load_texture_from_path("./assets/map_2.jpg")
     }
