@@ -14,13 +14,14 @@ use piston::input::{ButtonArgs, ButtonState, Button, ButtonEvent};
 use vec2d::Vec2D;
 
 mod character;
+mod scout;
 mod vec2d;
 
 
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
     player: character::Character,
-    scout: character::Character,
+    scout: scout::Scout,
     cursor_position: vec2d::Vec2D,
     textures: GameTextures,
     camera_transform: vec2d::Vec2D
@@ -56,10 +57,12 @@ impl App {
             image(&self.textures.map, map_transform, gl);
 
             // SCOUT
+
+            let scout_position = self.scout.get_position();
             let size_factor = 0.25;
             let scout_transform = c
                 .transform
-                .trans(self.scout.position.x, self.scout.position.y)
+                .trans(scout_position.x, scout_position.y)
                 .trans(self.textures.scout.get_width() as f64 * - 0.5 * size_factor, self.textures.scout.get_height() as f64 * - 0.5 * size_factor)
                 .trans(self.camera_transform.x, self.camera_transform.y)
                 .scale(size_factor, size_factor);
@@ -105,8 +108,11 @@ impl App {
                     self.player.set_target(&cursor_world_position);
                 },
                 Button::Mouse(MouseButton::Right) => {
-                    let cursor_world_position = self.get_cursor_world_position();
-                    self.scout.set_target(&cursor_world_position);
+                    if !self.scout.is_target_set() {
+                        let cursor_world_position = self.get_cursor_world_position();
+                        self.scout.set_target(&cursor_world_position, &self.player.position);
+                    }
+                    
                 },
                 _ => ()
             }
@@ -141,7 +147,7 @@ fn main() {
     let mut app = App {
         gl: GlGraphics::new(opengl),
         player: character::new(),
-        scout: character::new(),
+        scout: scout::new(),
         cursor_position: vec2d::new(),
         textures: load_game_textures(),
         camera_transform: vec2d::new()

@@ -1,3 +1,4 @@
+#[derive(Copy, Clone)]
 pub struct Vec2D {
     pub x: f64,
     pub y: f64
