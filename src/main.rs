@@ -2,6 +2,7 @@ extern crate glutin_window;
 extern crate graphics;
 extern crate opengl_graphics;
 extern crate piston;
+extern crate num;
 
 use std::path::Path;
 
@@ -10,7 +11,7 @@ use opengl_graphics::{GlGraphics, OpenGL, Texture, TextureSettings};
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
 use piston::{window::*, MouseButton, MouseCursorEvent};
-use piston::input::{ButtonArgs, ButtonState, Button, ButtonEvent};
+use piston::input::{ButtonArgs, ButtonState, Button, ButtonEvent, Key};
 use vec2d::Vec2D;
 
 mod character;
@@ -25,7 +26,9 @@ pub struct App {
     scout: scout::Scout,
     cursor_position: vec2d::Vec2D,
     textures: GameTextures,
-    camera_transform: vec2d::Vec2D
+    camera_transform: vec2d::Vec2D,
+    camera_position: vec2d::Vec2D,
+    camera_speed: vec2d::Vec2D
 }
 
 pub struct GameTextures {
@@ -33,6 +36,14 @@ pub struct GameTextures {
     scout: Texture,
     target: Texture,
     map: Texture
+}
+
+pub enum CameraDirection {
+    None,
+    Up,
+    Left,
+    Down,
+    Right
 }
 
 impl App {
@@ -53,6 +64,7 @@ impl App {
             let map_transform = c
                 .transform
                 .trans(self.textures.map.get_width() as f64 * - 0.5, self.textures.map.get_height() as f64 * - 0.5)
+                .trans(- self.camera_position.x, - self.camera_position.y)
                 .trans(self.camera_transform.x, self.camera_transform.y);
 
             image(&self.textures.map, map_transform, gl);
@@ -68,6 +80,7 @@ impl App {
                     .transform
                     .trans(scout_position.x, scout_position.y)
                     .trans(self.textures.scout.get_width() as f64 * - 0.5 * size_factor, self.textures.scout.get_height() as f64 * - 0.5 * size_factor)
+                    .trans(- self.camera_position.x, - self.camera_position.y)
                     .trans(self.camera_transform.x, self.camera_transform.y)
                     .scale(size_factor, size_factor);
     
@@ -83,6 +96,7 @@ impl App {
                 .transform
                 .trans(position.x, position.y)
                 .trans(self.textures.target.get_width() as f64 * - 0.5 * size_factor, self.textures.target.get_height() as f64 * - 0.5 * size_factor)
+                .trans(- self.camera_position.x, - self.camera_position.y)
                 .trans(self.camera_transform.x, self.camera_transform.y)
                 .scale(size_factor, size_factor);
 
@@ -96,6 +110,7 @@ impl App {
                 .transform
                 .trans(player_position.x, player_position.y)
                 .trans(self.textures.player.get_width() as f64 * - 0.5, self.textures.player.get_height() as f64 * - 0.5)
+                .trans(- self.camera_position.x, - self.camera_position.y)
                 .trans(self.camera_transform.x, self.camera_transform.y);
             image(&self.textures.player, player_transform, gl);
             
@@ -110,34 +125,55 @@ impl App {
         if !self.scout.is_target_set() && !self.scout.is_idle() && collision::are_positions_colliding(self.player.get_position(), self.scout.get_position(), collision::CollisionType::ScoutRetrieving) {
             self.scout.set_idle();
         }
-        
+
+        self.camera_position.x += self.camera_speed.x * args.dt;
+        self.camera_position.y += self.camera_speed.y * args.dt;
     }
 
     fn change_direction(&mut self, args: &ButtonArgs){
 
-        if args.state == ButtonState::Press {
-            match args.button {
-                Button::Mouse(MouseButton::Left) => {
-                    let cursor_world_position = self.get_cursor_world_position();
-                    self.player.set_target(&cursor_world_position);
-                },
-                Button::Mouse(MouseButton::Right) => {
-                    if self.scout.is_idle() {
-                        let cursor_world_position = self.get_cursor_world_position();
-                        self.scout.set_position(self.player.get_position());
-                        self.scout.set_target(&cursor_world_position, self.player.get_position());
+        match args.state {
+            ButtonState::Press => {
+                if args.state == ButtonState::Press {
+                    match args.button {
+                        Button::Mouse(MouseButton::Left) => {
+                            let cursor_world_position = self.get_cursor_world_position();
+                            self.player.set_target(&cursor_world_position);
+                        },
+                        Button::Mouse(MouseButton::Right) => {
+                            if self.scout.is_idle() {
+                                let cursor_world_position = self.get_cursor_world_position();
+                                self.scout.set_position(self.player.get_position());
+                                self.scout.set_target(&cursor_world_position, self.player.get_position());
+                            }
+                            
+                        },
+                        Button::Keyboard(Key::W) => self.camera_speed.y = num::clamp(self.camera_speed.y - 50.0, -50.0, 50.0),
+                        Button::Keyboard(Key::A) => self.camera_speed.x = num::clamp(self.camera_speed.x - 50.0, -50.0, 50.0),
+                        Button::Keyboard(Key::S) => self.camera_speed.y = num::clamp(self.camera_speed.y + 50.0, -50.0, 50.0),
+                        Button::Keyboard(Key::D) => self.camera_speed.x = num::clamp(self.camera_speed.x + 50.0, -50.0, 50.0),
+                        _ => ()
                     }
-                    
-                },
-                _ => ()
+                }
+            },
+            ButtonState::Release => {
+                match args.button {
+                    Button::Keyboard(Key::W) => self.camera_speed.y = 0.0,
+                    Button::Keyboard(Key::A) => self.camera_speed.x = 0.0,
+                    Button::Keyboard(Key::S) => self.camera_speed.y = 0.0,
+                    Button::Keyboard(Key::D) => self.camera_speed.x = 0.0,
+                    _ => ()
+                }
             }
         }
+
+        
     }
 
     fn get_cursor_world_position(&mut self) -> Vec2D {
         Vec2D {
-            x: self.cursor_position.x - self.camera_transform.x,
-            y: self.cursor_position.y - self.camera_transform.y
+            x: self.cursor_position.x - self.camera_transform.x + self.camera_position.x,
+            y: self.cursor_position.y - self.camera_transform.y + self.camera_position.y
         }
     }
 
@@ -165,7 +201,9 @@ fn main() {
         scout: scout::new(),
         cursor_position: vec2d::new(),
         textures: load_game_textures(),
-        camera_transform: vec2d::new()
+        camera_transform: vec2d::new(),
+        camera_position: vec2d::new(),
+        camera_speed: vec2d::new()
     };
 
     let mut events = Events::new(EventSettings::new());
