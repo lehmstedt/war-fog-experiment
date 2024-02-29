@@ -16,6 +16,7 @@ use vec2d::Vec2D;
 mod character;
 mod scout;
 mod vec2d;
+mod collision;
 
 
 pub struct App {
@@ -56,24 +57,31 @@ impl App {
 
             image(&self.textures.map, map_transform, gl);
 
+            let size_factor = 0.25;
+
             // SCOUT
 
-            let scout_position = self.scout.get_position();
-            let size_factor = 0.25;
-            let scout_transform = c
-                .transform
-                .trans(scout_position.x, scout_position.y)
-                .trans(self.textures.scout.get_width() as f64 * - 0.5 * size_factor, self.textures.scout.get_height() as f64 * - 0.5 * size_factor)
-                .trans(self.camera_transform.x, self.camera_transform.y)
-                .scale(size_factor, size_factor);
-
-            image(&self.textures.scout, scout_transform, gl);
+            if !self.scout.is_idle(){
+                let scout_position = self.scout.get_position();
+                
+                let scout_transform = c
+                    .transform
+                    .trans(scout_position.x, scout_position.y)
+                    .trans(self.textures.scout.get_width() as f64 * - 0.5 * size_factor, self.textures.scout.get_height() as f64 * - 0.5 * size_factor)
+                    .trans(self.camera_transform.x, self.camera_transform.y)
+                    .scale(size_factor, size_factor);
+    
+                image(&self.textures.scout, scout_transform, gl);
+            }
+            
 
             // TARGET
-            if self.player.is_target_set {
+            if self.player.is_target_set() {
+
+                let position = self.player.get_target_position();
                 let target_transform = c
                 .transform
-                .trans(self.player.target_position.x, self.player.target_position.y)
+                .trans(position.x, position.y)
                 .trans(self.textures.target.get_width() as f64 * - 0.5 * size_factor, self.textures.target.get_height() as f64 * - 0.5 * size_factor)
                 .trans(self.camera_transform.x, self.camera_transform.y)
                 .scale(size_factor, size_factor);
@@ -82,9 +90,11 @@ impl App {
             }
 
             // PLAYER
+
+            let player_position = self.player.get_position();
             let player_transform = c
                 .transform
-                .trans(self.player.position.x, self.player.position.y)
+                .trans(player_position.x, player_position.y)
                 .trans(self.textures.player.get_width() as f64 * - 0.5, self.textures.player.get_height() as f64 * - 0.5)
                 .trans(self.camera_transform.x, self.camera_transform.y);
             image(&self.textures.player, player_transform, gl);
@@ -96,6 +106,10 @@ impl App {
 
         self.player.update_position(&args.dt);
         self.scout.update_position(&args.dt);
+
+        if !self.scout.is_target_set() && !self.scout.is_idle() && collision::are_positions_colliding(self.player.get_position(), self.scout.get_position(), collision::CollisionType::ScoutRetrieving) {
+            self.scout.set_idle();
+        }
         
     }
 
@@ -108,9 +122,10 @@ impl App {
                     self.player.set_target(&cursor_world_position);
                 },
                 Button::Mouse(MouseButton::Right) => {
-                    if !self.scout.is_target_set() {
+                    if self.scout.is_idle() {
                         let cursor_world_position = self.get_cursor_world_position();
-                        self.scout.set_target(&cursor_world_position, &self.player.position);
+                        self.scout.set_position(self.player.get_position());
+                        self.scout.set_target(&cursor_world_position, self.player.get_position());
                     }
                     
                 },

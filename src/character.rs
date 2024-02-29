@@ -1,10 +1,11 @@
 use crate::vec2d;
+use crate::collision;
 
 pub struct Character {
-    pub position: vec2d::Vec2D,
+    position: vec2d::Vec2D,
     speed: vec2d::Vec2D,
-    pub is_target_set: bool,
-    pub target_position: vec2d::Vec2D,
+    is_target_set: bool,
+    target_position: vec2d::Vec2D,
     max_speed: f64
 }
 
@@ -24,9 +25,13 @@ impl Character {
         self.position.x += self.speed.x * dt;
         self.position.y += self.speed.y * dt;
 
-        if self.is_target_set && (self.position.x - self.target_position.x).abs() < 0.25 && (self.position.y - self.target_position.y).abs() < 0.25 {
+        if self.has_reached_target(){
             self.unset_target();
         }
+    }
+
+    pub fn has_reached_target(&mut self) -> bool{
+        collision::are_positions_colliding(&self.position, &self.target_position, collision::CollisionType::TargetReaching)
     }
 
     pub fn unset_target(&mut self){
@@ -43,5 +48,21 @@ impl Character {
         let length = ((self.target_position.x - self.position.x).powi(2) + (self.target_position.y - self.position.y).powi(2)).sqrt();
         self.speed.x = (self.target_position.x - self.position.x) / length * self.max_speed;
         self.speed.y = (self.target_position.y - self.position.y) / length * self.max_speed;
+    }
+
+    pub fn get_position(&mut self) -> &vec2d::Vec2D {
+        &self.position
+    }
+
+    pub fn get_target_position(&mut self) -> &vec2d::Vec2D {
+        &self.target_position
+    }
+
+    pub fn is_target_set(&mut self) -> bool {
+        self.is_target_set
+    }
+
+    pub fn set_position(&mut self, position: &vec2d::Vec2D) {
+        self.position = *position;
     }
 }
