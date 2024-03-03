@@ -26,17 +26,19 @@ pub struct App {
     player: character::Character,
     scout: scout::Scout,
     cursor_position: vec2d::Vec2D,
-    textures: GameTextures,
     camera_transform: vec2d::Vec2D,
     camera_position: vec2d::Vec2D,
     camera_speed: vec2d::Vec2D,
+    player_renderable: Renderable,
+    player_target_renderable: Renderable,
+    scout_renderable: Renderable,
+    map_renderable: Renderable
 }
 
-pub struct GameTextures {
-    player: Texture,
-    scout: Texture,
-    target: Texture,
-    map: Texture,
+pub struct Renderable {
+    position: vec2d::Vec2D,
+    texture: Texture,
+    size: f64
 }
 
 impl App {
@@ -49,28 +51,24 @@ impl App {
             self.camera_transform.x = args.window_size[0] / 2.0;
             self.camera_transform.y = args.window_size[1] / 2.0;
 
-            // MAP
-            let map_transform = calculate_transform(&vec2d::new(), &self.textures.map, 1.0, &c, &self.camera_position, &self.camera_transform);
-            image(&self.textures.map, map_transform, gl);
-
-            let size_factor = 0.25;
-
-            // SCOUT
+            let map_transform = calculate_transform(&self.map_renderable, &c, &self.camera_position, &self.camera_transform);
+            image(&self.map_renderable.texture, map_transform, gl);
 
             if !self.scout.is_idle() {
-                let scout_transform = calculate_transform(&self.scout.get_position(), &self.textures.scout, size_factor, &c, &self.camera_position, &self.camera_transform);
-                image(&self.textures.scout, scout_transform, gl);
+                self.scout_renderable.position = *self.scout.get_position();
+                let scout_transform = calculate_transform(&self.scout_renderable, &c, &self.camera_position, &self.camera_transform);
+                image(&self.scout_renderable.texture, scout_transform, gl);
             }
 
-            // TARGET
             if self.player.is_target_set() {
-                let target_transform = calculate_transform(&self.player.get_target_position(), &self.textures.target, size_factor, &c, &self.camera_position, &self.camera_transform);
-                image(&self.textures.target, target_transform, gl);
+                self.player_target_renderable.position = *self.player.get_target_position();
+                let target_transform = calculate_transform(&self.player_target_renderable, &c, &self.camera_position, &self.camera_transform);
+                image(&self.player_target_renderable.texture, target_transform, gl);
             }
 
-            // PLAYER
-            let player_transform = calculate_transform(&self.player.get_position(), &self.textures.player, 1.0, &c, &self.camera_position, &self.camera_transform);
-            image(&self.textures.player, player_transform, gl);
+            self.player_renderable.position = *self.player.get_position();
+            let player_transform = calculate_transform(&self.player_renderable, &c, &self.camera_position, &self.camera_transform);
+            image(&self.player_renderable.texture, player_transform, gl);
         });
     }
 
@@ -153,17 +151,17 @@ impl App {
     }
 }
 
-fn calculate_transform(position: &vec2d::Vec2D, texture: &Texture, size: f64, c: &Context, camera_position: &vec2d::Vec2D, camera_transform: &vec2d::Vec2D) -> math::Matrix2d {
+fn calculate_transform(renderable: &Renderable, c: &Context, camera_position: &vec2d::Vec2D, camera_transform: &vec2d::Vec2D) -> math::Matrix2d {
     c
         .transform
-        .trans(position.x, position.y)
+        .trans(renderable.position.x, renderable.position.y)
         .trans(
-            texture.get_width() as f64 * -0.5 * size,
-            texture.get_height() as f64 * -0.5 * size,
+            renderable.texture.get_width() as f64 * -0.5 * renderable.size,
+            renderable.texture.get_height() as f64 * -0.5 * renderable.size,
         )
         .trans(- camera_position.x, - camera_position.y)
         .trans(camera_transform.x, camera_transform.y)
-        .scale(size, size)
+        .scale(renderable.size, renderable.size)
 }
 
 fn main() {
@@ -183,10 +181,29 @@ fn main() {
         player: character::new(),
         scout: scout::new(),
         cursor_position: vec2d::new(),
-        textures: load_game_textures(),
         camera_transform: vec2d::new(),
         camera_position: vec2d::new(),
         camera_speed: vec2d::new(),
+        player_renderable: Renderable {
+            position: vec2d::new(),
+            texture: load_texture_from_path("./assets/rust.png"),
+            size: 1.0
+        },
+        player_target_renderable: Renderable {
+            position: vec2d::new(),
+            texture: load_texture_from_path("./assets/target.png"),
+            size: 0.25
+        },
+        scout_renderable: Renderable {
+            position: vec2d::new(),
+            texture: load_texture_from_path("./assets/scout.png"),
+            size: 0.25
+        },
+        map_renderable: Renderable {
+            position: vec2d::new(),
+            texture: load_texture_from_path("./assets/map_2.jpg"),
+            size: 1.0
+        },
     };
 
     let mut events = Events::new(EventSettings::new());
@@ -205,15 +222,6 @@ fn main() {
         if let Some(args) = e.mouse_cursor_args() {
             app.update_cursor_position(&args);
         }
-    }
-}
-
-fn load_game_textures() -> GameTextures {
-    GameTextures {
-        player: load_texture_from_path("./assets/rust.png"),
-        scout: load_texture_from_path("./assets/scout.png"),
-        target: load_texture_from_path("./assets/target.png"),
-        map: load_texture_from_path("./assets/map_2.jpg"),
     }
 }
 
