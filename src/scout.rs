@@ -5,14 +5,16 @@ use crate::collision;
 pub struct Scout {
     character: character::Character,
     player_position: vec2d::Vec2D,
-    is_idle: bool
+    is_idle: bool,
+    is_visible: bool
 }
 
 pub fn new() -> Scout {
     Scout {
         character: character::new(),
         is_idle: true,
-        player_position: vec2d::new()
+        player_position: vec2d::new(),
+        is_visible: true
     }
 
 }
@@ -57,5 +59,13 @@ impl Scout {
 
     pub fn is_target_set(&mut self) -> bool {
         self.character.is_target_set()
+    }
+
+    pub fn set_visible(&mut self, visible: bool){
+        self.is_visible = visible;
+    }
+
+    pub fn is_visible(&mut self) -> bool{
+        self.is_visible
     }
 }

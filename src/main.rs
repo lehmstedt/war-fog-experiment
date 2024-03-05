@@ -54,7 +54,7 @@ impl App {
             let map_transform = calculate_transform(&self.map_renderable, &c, &self.camera_position, &self.camera_transform);
             image(&self.map_renderable.texture, map_transform, gl);
 
-            if !self.scout.is_idle() {
+            if !self.scout.is_idle() && self.scout.is_visible() {
                 self.scout_renderable.position = *self.scout.get_position();
                 let scout_transform = calculate_transform(&self.scout_renderable, &c, &self.camera_position, &self.camera_transform);
                 image(&self.scout_renderable.texture, scout_transform, gl);
@@ -88,6 +88,9 @@ impl App {
         {
             self.scout.set_idle();
         }
+
+        let is_scout_visible = collision::are_positions_colliding(self.player.get_position(), self.scout.get_position(), collision::CollisionType::View);
+        self.scout.set_visible(is_scout_visible);
 
         self.camera_position.x += self.camera_speed.x * args.dt;
         self.camera_position.y += self.camera_speed.y * args.dt;
