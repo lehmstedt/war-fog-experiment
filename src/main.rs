@@ -25,6 +25,7 @@ pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
     player: character::Character,
     scout: scout::Scout,
+    enemy: character::Character,
     cursor_position: vec2d::Vec2D,
     camera_transform: vec2d::Vec2D,
     camera_position: vec2d::Vec2D,
@@ -32,7 +33,8 @@ pub struct App {
     player_renderable: Renderable,
     player_target_renderable: Renderable,
     scout_renderable: Renderable,
-    map_renderable: Renderable
+    map_renderable: Renderable,
+    enemy_renderable: Renderable
 }
 
 pub struct Renderable {
@@ -66,6 +68,12 @@ impl App {
                 image(&self.player_target_renderable.texture, target_transform, gl);
             }
 
+            if self.enemy.is_visible() {
+                self.enemy_renderable.position = *self.enemy.get_position();
+                let enemy_transform = calculate_transform(&self.enemy_renderable, &c, &self.camera_position, &self.camera_transform);
+                image(&self.enemy_renderable.texture, enemy_transform, gl);
+            }
+
             self.player_renderable.position = *self.player.get_position();
             let player_transform = calculate_transform(&self.player_renderable, &c, &self.camera_position, &self.camera_transform);
             image(&self.player_renderable.texture, player_transform, gl);
@@ -91,6 +99,9 @@ impl App {
 
         let is_scout_visible = collision::are_positions_colliding(self.player.get_position(), self.scout.get_position(), collision::CollisionType::View);
         self.scout.set_visible(is_scout_visible);
+
+        let is_enemy_visible = collision::are_positions_colliding(self.player.get_position(), self.enemy.get_position(), collision::CollisionType::View);
+        self.enemy.set_visible(is_enemy_visible);
 
         self.camera_position.x += self.camera_speed.x * args.dt;
         self.camera_position.y += self.camera_speed.y * args.dt;
@@ -183,6 +194,7 @@ fn main() {
         gl: GlGraphics::new(opengl),
         player: character::new(),
         scout: scout::new(),
+        enemy: character::new(),
         cursor_position: vec2d::new(),
         camera_transform: vec2d::new(),
         camera_position: vec2d::new(),
@@ -207,7 +219,14 @@ fn main() {
             texture: load_texture_from_path("./assets/map_2.jpg"),
             size: 1.0
         },
+        enemy_renderable: Renderable {
+            position: vec2d::new(),
+            texture: load_texture_from_path("./assets/enemy.png"),
+            size: 0.25
+        }
     };
+
+    app.enemy.set_position(&Vec2D{ x: rand::random::<f64>() * 500.0, y: rand::random::<f64>() * 500.0});
 
     let mut events = Events::new(EventSettings::new());
     while let Some(e) = events.next(&mut window) {

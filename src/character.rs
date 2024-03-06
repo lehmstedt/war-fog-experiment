@@ -6,7 +6,8 @@ pub struct Character {
     speed: vec2d::Vec2D,
     is_target_set: bool,
     target_position: vec2d::Vec2D,
-    max_speed: f64
+    max_speed: f64,
+    is_visible: bool
 }
 
 pub fn new() -> Character{
@@ -15,7 +16,8 @@ pub fn new() -> Character{
         speed: vec2d::new(),
         is_target_set: false,
         target_position: vec2d::new(),
-        max_speed: 50.0
+        max_speed: 50.0,
+        is_visible: false
     }
 }
 
@@ -64,5 +66,13 @@ impl Character {
 
     pub fn set_position(&mut self, position: &vec2d::Vec2D) {
         self.position = *position;
+    }
+
+    pub fn set_visible(&mut self, visible: bool){
+        self.is_visible = visible
+    }
+
+    pub fn is_visible(&mut self) -> bool {
+        self.is_visible
     }
 }
