@@ -41,11 +41,11 @@ impl Scout {
         self.character.set_target(target_position);
     }
 
-    pub fn get_position(&mut self) -> &vec2d::Vec2D {
+    pub fn get_position(&self) -> &vec2d::Vec2D {
         &self.character.get_position()
     }
 
-    pub fn is_idle(&mut self) -> bool {
+    pub fn is_idle(&self) -> bool {
         self.is_idle
     }
 
@@ -65,7 +65,7 @@ impl Scout {
         self.is_visible = visible;
     }
 
-    pub fn is_visible(&mut self) -> bool{
+    pub fn is_visible(&self) -> bool{
         self.is_visible
     }
 }

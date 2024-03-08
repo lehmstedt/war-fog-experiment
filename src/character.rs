@@ -52,15 +52,15 @@ impl Character {
         self.speed.y = (self.target_position.y - self.position.y) / length * self.max_speed;
     }
 
-    pub fn get_position(&mut self) -> &vec2d::Vec2D {
+    pub fn get_position(&self) -> &vec2d::Vec2D {
         &self.position
     }
 
-    pub fn get_target_position(&mut self) -> &vec2d::Vec2D {
+    pub fn get_target_position(&self) -> &vec2d::Vec2D {
         &self.target_position
     }
 
-    pub fn is_target_set(&mut self) -> bool {
+    pub fn is_target_set(&self) -> bool {
         self.is_target_set
     }
 
@@ -72,7 +72,7 @@ impl Character {
         self.is_visible = visible
     }
 
-    pub fn is_visible(&mut self) -> bool {
+    pub fn is_visible(&self) -> bool {
         self.is_visible
     }
 }

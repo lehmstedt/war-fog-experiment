@@ -20,12 +20,12 @@ mod character;
 mod collision;
 mod scout;
 mod vec2d;
+mod game;
+
+const CAMERA_MOVE_SPEED: f64 = 100.0;
 
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
-    player: character::Character,
-    scout: scout::Scout,
-    enemy: character::Character,
     cursor_position: vec2d::Vec2D,
     camera_transform: vec2d::Vec2D,
     camera_position: vec2d::Vec2D,
@@ -44,7 +44,7 @@ pub struct Renderable {
 }
 
 impl App {
-    fn render(&mut self, args: &RenderArgs) {
+    fn render(&mut self, args: &RenderArgs, game: &game::Game) {
         use graphics::*;
 
         self.gl.draw(args.viewport(), |c, gl| {
@@ -56,25 +56,25 @@ impl App {
             let map_transform = calculate_transform(&self.map_renderable, &c, &self.camera_position, &self.camera_transform);
             image(&self.map_renderable.texture, map_transform, gl);
 
-            if !self.scout.is_idle() && self.scout.is_visible() {
-                self.scout_renderable.position = *self.scout.get_position();
+            if game.is_scout_visible() {
+                self.scout_renderable.position = *game.get_scout_position();
                 let scout_transform = calculate_transform(&self.scout_renderable, &c, &self.camera_position, &self.camera_transform);
                 image(&self.scout_renderable.texture, scout_transform, gl);
             }
 
-            if self.player.is_target_set() {
-                self.player_target_renderable.position = *self.player.get_target_position();
+            if game.is_player_target_visible() {
+                self.player_target_renderable.position = *game.get_player_target_position();
                 let target_transform = calculate_transform(&self.player_target_renderable, &c, &self.camera_position, &self.camera_transform);
                 image(&self.player_target_renderable.texture, target_transform, gl);
             }
 
-            if self.enemy.is_visible() {
-                self.enemy_renderable.position = *self.enemy.get_position();
+            if game.is_enemy_visible() {
+                self.enemy_renderable.position = *game.get_enemy_position();
                 let enemy_transform = calculate_transform(&self.enemy_renderable, &c, &self.camera_position, &self.camera_transform);
                 image(&self.enemy_renderable.texture, enemy_transform, gl);
             }
 
-            self.player_renderable.position = *self.player.get_position();
+            self.player_renderable.position = *game.get_player_position();
             let player_transform = calculate_transform(&self.player_renderable, &c, &self.camera_position, &self.camera_transform);
             image(&self.player_renderable.texture, player_transform, gl);
         });
@@ -82,62 +82,42 @@ impl App {
 
     
 
-    fn update(&mut self, args: &UpdateArgs) {
-        self.player.update_position(&args.dt);
-        self.scout.update_position(&args.dt);
+    fn update(&mut self, args: &UpdateArgs, game: &mut game::Game) {
 
-        if !self.scout.is_target_set()
-            && !self.scout.is_idle()
-            && collision::are_positions_colliding(
-                self.player.get_position(),
-                self.scout.get_position(),
-                collision::CollisionType::ScoutRetrieving,
-            )
-        {
-            self.scout.set_idle();
-        }
-
-        let is_scout_visible = collision::are_positions_colliding(self.player.get_position(), self.scout.get_position(), collision::CollisionType::View);
-        self.scout.set_visible(is_scout_visible);
-
-        let is_enemy_visible = collision::are_positions_colliding(self.player.get_position(), self.enemy.get_position(), collision::CollisionType::View);
-        self.enemy.set_visible(is_enemy_visible);
+        game.update(&args.dt);
 
         self.camera_position.x += self.camera_speed.x * args.dt;
         self.camera_position.y += self.camera_speed.y * args.dt;
     }
 
-    fn change_direction(&mut self, args: &ButtonArgs) {
+    fn change_direction(&mut self, args: &ButtonArgs, game: &mut game::Game) {
         match args.state {
             ButtonState::Press => {
                 match args.button {
                     Button::Mouse(MouseButton::Left) => {
                         let cursor_world_position = self.get_cursor_world_position();
-                        self.player.set_target(&cursor_world_position);
+                        game.set_player_target(&cursor_world_position);
+
                     }
                     Button::Mouse(MouseButton::Right) => {
-                        if self.scout.is_idle() {
-                            let cursor_world_position = self.get_cursor_world_position();
-                            self.scout.set_position(self.player.get_position());
-                            self.scout
-                                .set_target(&cursor_world_position, self.player.get_position());
-                        }
+                        let cursor_world_position = self.get_cursor_world_position();
+                        game.set_scout_target(&cursor_world_position);
                     }
                     Button::Keyboard(Key::W) => {
                         self.camera_speed.y =
-                            num::clamp(self.camera_speed.y - 50.0, -50.0, 50.0)
+                            num::clamp(self.camera_speed.y - CAMERA_MOVE_SPEED, -CAMERA_MOVE_SPEED, CAMERA_MOVE_SPEED)
                     }
                     Button::Keyboard(Key::A) => {
                         self.camera_speed.x =
-                            num::clamp(self.camera_speed.x - 50.0, -50.0, 50.0)
+                            num::clamp(self.camera_speed.x - CAMERA_MOVE_SPEED, -CAMERA_MOVE_SPEED, CAMERA_MOVE_SPEED)
                     }
                     Button::Keyboard(Key::S) => {
                         self.camera_speed.y =
-                            num::clamp(self.camera_speed.y + 50.0, -50.0, 50.0)
+                            num::clamp(self.camera_speed.y + CAMERA_MOVE_SPEED, -CAMERA_MOVE_SPEED, CAMERA_MOVE_SPEED)
                     }
                     Button::Keyboard(Key::D) => {
                         self.camera_speed.x =
-                            num::clamp(self.camera_speed.x + 50.0, -50.0, 50.0)
+                            num::clamp(self.camera_speed.x + CAMERA_MOVE_SPEED, -CAMERA_MOVE_SPEED, CAMERA_MOVE_SPEED)
                     }
                     _ => (),
                 }
@@ -189,12 +169,11 @@ fn main() {
         .build()
         .unwrap();
 
+    let mut game = game::new();
+
     // Create a new game and run it.
     let mut app = App {
         gl: GlGraphics::new(opengl),
-        player: character::new(),
-        scout: scout::new(),
-        enemy: character::new(),
         cursor_position: vec2d::new(),
         camera_transform: vec2d::new(),
         camera_position: vec2d::new(),
@@ -226,20 +205,18 @@ fn main() {
         }
     };
 
-    app.enemy.set_position(&Vec2D{ x: rand::random::<f64>() * 500.0, y: rand::random::<f64>() * 500.0});
-
     let mut events = Events::new(EventSettings::new());
     while let Some(e) = events.next(&mut window) {
         if let Some(args) = e.render_args() {
-            app.render(&args);
+            app.render(&args, &game);
         }
 
         if let Some(args) = e.update_args() {
-            app.update(&args);
+            app.update(&args, &mut game);
         }
 
         if let Some(args) = e.button_args() {
-            app.change_direction(&args);
+            app.change_direction(&args, &mut game);
         }
         if let Some(args) = e.mouse_cursor_args() {
             app.update_cursor_position(&args);
