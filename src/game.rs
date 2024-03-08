@@ -25,6 +25,11 @@ impl Game {
     pub fn update(&mut self, dt: &f64){
         self.player.update_position(dt);
         self.scout.update_position(dt);
+        self.enemy.update_position(dt);
+
+        if !self.enemy.is_target_set(){
+            self.enemy.set_target(&vec2d::Vec2D{ x: (rand::random::<f64>() -0.5) * 500.0, y: (rand::random::<f64>() - 0.5) * 500.0});
+        }
 
         if !self.scout.is_target_set()
             && !self.scout.is_idle()
@@ -44,7 +49,6 @@ impl Game {
             let enemy_position = self.scout.deliver_enemy_position();
             self.player.discover_enemy(enemy_position);
         }
-        self.scout.set_visible(is_scout_visible);
 
         let is_enemy_visible = collision::are_positions_colliding(self.player.get_position(), self.enemy.get_position(), collision::CollisionType::View);
         self.enemy.set_visible(is_enemy_visible);
@@ -97,6 +101,10 @@ impl Game {
 
     pub fn is_enemy_discovered(&self) -> bool {
         self.player.has_discovered_enemy()
+    }
+
+    pub fn get_discovered_enemy_position(&self) -> &vec2d::Vec2D {
+        self.player.get_known_enemy_position()
     }
 
 

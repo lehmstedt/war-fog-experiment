@@ -69,8 +69,13 @@ impl App {
                 image(&self.player_target_renderable.texture, target_transform, gl);
             }
 
-            if game.is_enemy_visible() || self.god_mode || game.is_enemy_discovered() {
+            if game.is_enemy_visible() || self.god_mode {
                 self.enemy_renderable.position = *game.get_enemy_position();
+                let enemy_transform = calculate_transform(&self.enemy_renderable, &c, &self.camera_position, &self.camera_transform);
+                image(&self.enemy_renderable.texture, enemy_transform, gl);
+            }
+            else if game.is_enemy_discovered() {
+                self.enemy_renderable.position = *game.get_discovered_enemy_position();
                 let enemy_transform = calculate_transform(&self.enemy_renderable, &c, &self.camera_position, &self.camera_transform);
                 image(&self.enemy_renderable.texture, enemy_transform, gl);
             }
