@@ -7,7 +7,9 @@ pub struct Character {
     is_target_set: bool,
     target_position: vec2d::Vec2D,
     max_speed: f64,
-    is_visible: bool
+    is_visible: bool,
+    known_enemy_position: vec2d::Vec2D,
+    has_discovered_enemy: bool
 }
 
 pub fn new() -> Character{
@@ -17,7 +19,9 @@ pub fn new() -> Character{
         is_target_set: false,
         target_position: vec2d::new(),
         max_speed: 50.0,
-        is_visible: false
+        is_visible: false,
+        known_enemy_position: vec2d::new(),
+        has_discovered_enemy: false
     }
 }
 
@@ -74,5 +78,18 @@ impl Character {
 
     pub fn is_visible(&self) -> bool {
         self.is_visible
+    }
+
+    pub fn get_known_enemy_position(&self) -> &vec2d::Vec2D {
+        &self.known_enemy_position
+    }
+
+    pub fn discover_enemy(&mut self, enemy_position: &vec2d::Vec2D){
+        self.known_enemy_position = *enemy_position;
+        self.has_discovered_enemy = true;
+    }
+
+    pub fn has_discovered_enemy(&self) -> bool {
+        self.has_discovered_enemy
     }
 }

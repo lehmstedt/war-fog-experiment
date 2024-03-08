@@ -16,7 +16,7 @@ pub fn new() -> Game{
         enemy: character::new()
     };
 
-    game.enemy.set_position(&vec2d::Vec2D{ x: rand::random::<f64>() * 500.0, y: rand::random::<f64>() * 500.0});
+    game.enemy.set_position(&vec2d::Vec2D{ x: (rand::random::<f64>() -0.5) * 500.0, y: (rand::random::<f64>() - 0.5) * 500.0});
 
     return game;   
 }
@@ -40,8 +40,19 @@ impl Game {
         let is_scout_visible = collision::are_positions_colliding(self.player.get_position(), self.scout.get_position(), collision::CollisionType::View);
         self.scout.set_visible(is_scout_visible);
 
+        if self.scout.has_enemy_position_to_deliver() && collision::are_positions_colliding( self.player.get_position(), self.scout.get_position(), collision::CollisionType::TargetReaching){
+            let enemy_position = self.scout.deliver_enemy_position();
+            self.player.discover_enemy(enemy_position);
+        }
+        self.scout.set_visible(is_scout_visible);
+
         let is_enemy_visible = collision::are_positions_colliding(self.player.get_position(), self.enemy.get_position(), collision::CollisionType::View);
         self.enemy.set_visible(is_enemy_visible);
+
+        if collision::are_positions_colliding(self.scout.get_position(), self.enemy.get_position(), collision::CollisionType::View){
+            self.scout.discover_enemy(self.enemy.get_position());
+        }
+        
     }
 
     pub fn get_player_position(&self) -> &vec2d::Vec2D{
@@ -82,6 +93,10 @@ impl Game {
 
     pub fn is_enemy_visible(&self) -> bool {
         self.enemy.is_visible()
+    }
+
+    pub fn is_enemy_discovered(&self) -> bool {
+        self.player.has_discovered_enemy()
     }
 
 

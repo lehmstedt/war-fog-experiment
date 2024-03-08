@@ -34,7 +34,8 @@ pub struct App {
     player_target_renderable: Renderable,
     scout_renderable: Renderable,
     map_renderable: Renderable,
-    enemy_renderable: Renderable
+    enemy_renderable: Renderable,
+    god_mode: bool
 }
 
 pub struct Renderable {
@@ -56,19 +57,19 @@ impl App {
             let map_transform = calculate_transform(&self.map_renderable, &c, &self.camera_position, &self.camera_transform);
             image(&self.map_renderable.texture, map_transform, gl);
 
-            if game.is_scout_visible() {
+            if game.is_scout_visible() || self.god_mode {
                 self.scout_renderable.position = *game.get_scout_position();
                 let scout_transform = calculate_transform(&self.scout_renderable, &c, &self.camera_position, &self.camera_transform);
                 image(&self.scout_renderable.texture, scout_transform, gl);
             }
 
-            if game.is_player_target_visible() {
+            if game.is_player_target_visible() || self.god_mode {
                 self.player_target_renderable.position = *game.get_player_target_position();
                 let target_transform = calculate_transform(&self.player_target_renderable, &c, &self.camera_position, &self.camera_transform);
                 image(&self.player_target_renderable.texture, target_transform, gl);
             }
 
-            if game.is_enemy_visible() {
+            if game.is_enemy_visible() || self.god_mode || game.is_enemy_discovered() {
                 self.enemy_renderable.position = *game.get_enemy_position();
                 let enemy_transform = calculate_transform(&self.enemy_renderable, &c, &self.camera_position, &self.camera_transform);
                 image(&self.enemy_renderable.texture, enemy_transform, gl);
@@ -90,7 +91,7 @@ impl App {
         self.camera_position.y += self.camera_speed.y * args.dt;
     }
 
-    fn change_direction(&mut self, args: &ButtonArgs, game: &mut game::Game) {
+    fn react_to_inputs(&mut self, args: &ButtonArgs, game: &mut game::Game) {
         match args.state {
             ButtonState::Press => {
                 match args.button {
@@ -118,6 +119,9 @@ impl App {
                     Button::Keyboard(Key::D) => {
                         self.camera_speed.x =
                             num::clamp(self.camera_speed.x + CAMERA_MOVE_SPEED, -CAMERA_MOVE_SPEED, CAMERA_MOVE_SPEED)
+                    },
+                    Button::Keyboard(Key::G) => {
+                        self.god_mode = true
                     }
                     _ => (),
                 }
@@ -127,6 +131,7 @@ impl App {
                 Button::Keyboard(Key::A) => self.camera_speed.x = 0.0,
                 Button::Keyboard(Key::S) => self.camera_speed.y = 0.0,
                 Button::Keyboard(Key::D) => self.camera_speed.x = 0.0,
+                Button::Keyboard(Key::G) => self.god_mode = false,
                 _ => (),
             },
         }
@@ -202,7 +207,8 @@ fn main() {
             position: vec2d::new(),
             texture: load_texture_from_path("./assets/enemy.png"),
             size: 0.25
-        }
+        },
+        god_mode: false
     };
 
     let mut events = Events::new(EventSettings::new());
@@ -216,7 +222,7 @@ fn main() {
         }
 
         if let Some(args) = e.button_args() {
-            app.change_direction(&args, &mut game);
+            app.react_to_inputs(&args, &mut game);
         }
         if let Some(args) = e.mouse_cursor_args() {
             app.update_cursor_position(&args);

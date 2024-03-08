@@ -6,7 +6,8 @@ pub struct Scout {
     character: character::Character,
     player_position: vec2d::Vec2D,
     is_idle: bool,
-    is_visible: bool
+    is_visible: bool,
+    has_enemy_position_to_deliver: bool
 }
 
 pub fn new() -> Scout {
@@ -14,7 +15,8 @@ pub fn new() -> Scout {
         character: character::new(),
         is_idle: true,
         player_position: vec2d::new(),
-        is_visible: true
+        is_visible: true,
+        has_enemy_position_to_deliver: false
     }
 
 }
@@ -67,5 +69,20 @@ impl Scout {
 
     pub fn is_visible(&self) -> bool{
         self.is_visible
+    }
+
+    pub fn discover_enemy(&mut self, enemy_position: &vec2d::Vec2D){
+        self.character.discover_enemy(enemy_position);
+        self.has_enemy_position_to_deliver = true;
+        self.character.set_target(&self.player_position);
+    }
+
+    pub fn has_enemy_position_to_deliver(&self) -> bool {
+        self.has_enemy_position_to_deliver
+    }
+
+    pub fn deliver_enemy_position(&mut self) -> &vec2d::Vec2D {
+        self.has_enemy_position_to_deliver = false;
+        &self.character.get_known_enemy_position()
     }
 }
