@@ -55,8 +55,8 @@ impl Game {
         }
 
         if collision::are_positions_colliding(self.player.get_position(), self.enemy.get_position(), collision::CollisionType::Fight){
-            self.player.hurt();
-            self.enemy.hurt(); 
+            self.player.hurt(dt);
+            self.enemy.hurt(dt); 
         }
         
     }

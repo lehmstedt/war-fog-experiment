@@ -99,8 +99,8 @@ impl Character {
         self.has_discovered_enemy
     }
 
-    pub fn hurt(&mut self) {
-        self.health -= 1.0;
+    pub fn hurt(&mut self, health_loss: &f64) {
+        self.health -= health_loss;
     }
 
     pub fn get_health(&self) -> &f64{
