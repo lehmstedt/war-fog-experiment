@@ -9,7 +9,8 @@ pub struct Character {
     max_speed: f64,
     is_visible: bool,
     known_enemy_position: vec2d::Vec2D,
-    has_discovered_enemy: bool
+    has_discovered_enemy: bool,
+    health: f64
 }
 
 pub fn new() -> Character{
@@ -21,7 +22,8 @@ pub fn new() -> Character{
         max_speed: 50.0,
         is_visible: false,
         known_enemy_position: vec2d::new(),
-        has_discovered_enemy: false
+        has_discovered_enemy: false,
+        health: 100.0
     }
 }
 
@@ -95,5 +97,13 @@ impl Character {
 
     pub fn has_discovered_enemy(&self) -> bool {
         self.has_discovered_enemy
+    }
+
+    pub fn hurt(&mut self) {
+        self.health -= 1.0;
+    }
+
+    pub fn get_health(&self) -> &f64{
+        &self.health
     }
 }

@@ -56,6 +56,11 @@ impl Game {
         if collision::are_positions_colliding(self.scout.get_position(), self.enemy.get_position(), collision::CollisionType::View){
             self.scout.discover_enemy(self.enemy.get_position());
         }
+
+        if collision::are_positions_colliding(self.player.get_position(), self.enemy.get_position(), collision::CollisionType::Fight){
+            self.player.hurt();
+            self.enemy.hurt(); 
+        }
         
     }
 
@@ -105,6 +110,14 @@ impl Game {
 
     pub fn get_discovered_enemy_position(&self) -> &vec2d::Vec2D {
         self.player.get_known_enemy_position()
+    }
+
+    pub fn get_player(&self) -> &character::Character {
+        &self.player
+    }
+
+    pub fn get_enemy(&self) -> &character::Character {
+        &self.enemy
     }
 
 
