@@ -56,8 +56,8 @@ impl App {
             let map_transform = calculate_transform(&self.map_renderable, &c, &self.camera_position, &self.camera_transform);
             image(&self.map_renderable.texture, map_transform, gl);
 
-            if game.is_scout_visible() || self.god_mode {
-                self.scout_renderable.position = *game.get_scout_position();
+            if game.get_scout().is_visible() || self.god_mode {
+                self.scout_renderable.position = *game.get_scout().get_position();
                 let scout_transform = calculate_transform(&self.scout_renderable, &c, &self.camera_position, &self.camera_transform);
                 image(&self.scout_renderable.texture, scout_transform, gl);
             }
@@ -66,6 +66,7 @@ impl App {
                 self.player_target_renderable.position = *game.get_player_target_position();
                 let target_transform = calculate_transform(&self.player_target_renderable, &c, &self.camera_position, &self.camera_transform);
                 image(&self.player_target_renderable.texture, target_transform, gl);
+
             }
 
             if game.is_enemy_visible() || self.god_mode {

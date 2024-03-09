@@ -1,5 +1,6 @@
 use crate::character;
 use crate::scout;
+use crate::scout::ScoutStatus;
 use crate::vec2d;
 use crate::collision;
 
@@ -31,14 +32,10 @@ impl Game {
             self.enemy.set_target(&vec2d::Vec2D{ x: (rand::random::<f64>() -0.5) * 500.0, y: (rand::random::<f64>() - 0.5) * 500.0});
         }
 
-        if !self.scout.is_target_set()
-            && !self.scout.is_idle()
-            && collision::are_positions_colliding(
-                self.player.get_position(),
-                self.scout.get_position(),
-                collision::CollisionType::ScoutRetrieving,
-            )
-        {
+        if *self.scout.get_status() == ScoutStatus::ReceivingMission && !collision::are_positions_colliding(self.player.get_position(),self.scout.get_position(),collision::CollisionType::ScoutRetrieving){
+            self.scout.set_status(ScoutStatus::GoingToTarget);
+        }
+        if *self.scout.get_status() == ScoutStatus::GoingToTarget && collision::are_positions_colliding(self.player.get_position(),self.scout.get_position(),collision::CollisionType::ScoutRetrieving){
             self.scout.set_idle();
         }
 
@@ -72,16 +69,8 @@ impl Game {
         self.player.get_target_position()
     }
 
-    pub fn get_scout_position(&self) -> &vec2d::Vec2D{
-        self.scout.get_position()
-    }
-
     pub fn get_enemy_position(&self) -> &vec2d::Vec2D{
         self.enemy.get_position()
-    }
-
-    pub fn is_scout_visible(&self) -> bool {
-        !self.scout.is_idle() && self.scout.is_visible()
     }
 
     pub fn set_player_target(&mut self, target_position: &vec2d::Vec2D){
@@ -89,10 +78,10 @@ impl Game {
     }
 
     pub fn set_scout_target(&mut self, target_position: &vec2d::Vec2D){
-        if self.scout.is_idle() {
+        if *self.scout.get_status() == ScoutStatus::Idle {
+            self.scout.set_status(ScoutStatus::ReceivingMission);
             self.scout.set_position(self.player.get_position());
-            self.scout
-                .set_target(target_position, self.player.get_position());
+            self.scout.set_target(target_position, self.player.get_position());
         }
     }
 
@@ -118,6 +107,10 @@ impl Game {
 
     pub fn get_enemy(&self) -> &character::Character {
         &self.enemy
+    }
+
+    pub fn get_scout(&self) -> &scout::Scout {
+        &self.scout
     }
 
 
