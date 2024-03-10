@@ -124,7 +124,7 @@ impl App {
                     }
                     Button::Mouse(MouseButton::Right) => {
                         let cursor_world_position = self.get_cursor_world_position();
-                        game.set_scout_target(&cursor_world_position);
+                        game.set_scout_mission(&cursor_world_position);
                     }
                     Button::Keyboard(Key::W) => {
                         self.camera_speed.y =

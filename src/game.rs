@@ -36,9 +36,19 @@ impl Game {
         }
 
         // player/scout interaction
+        if collision::are_positions_colliding(self.player.get_position(),self.scout.get_position(),collision::CollisionType::View){
+            match *self.scout.get_status() {
+                ScoutStatus::GoingToPlayer => {
+                    self.scout.set_target(self.player.get_position());
+                },
+                _ => ()
+            }
+            
+        }
+
         if collision::are_positions_colliding(self.player.get_position(),self.scout.get_position(),collision::CollisionType::Touch){
             match *self.scout.get_status() {
-                ScoutStatus::GoingToPlayer | ScoutStatus::WaitingForPlayer => {
+                ScoutStatus::GoingToPlayer => {
                     self.scout.set_idle();
 
                     if self.scout.has_enemy_position_to_deliver(){
@@ -58,6 +68,9 @@ impl Game {
 
         let is_enemy_visible = collision::are_positions_colliding(self.player.get_position(), self.enemy.get_position(), collision::CollisionType::View);
         self.enemy.set_visible(is_enemy_visible);
+        if is_enemy_visible {
+            self.player.discover_enemy(self.enemy.get_position());
+        }
 
         if collision::are_positions_colliding(self.scout.get_position(), self.enemy.get_position(), collision::CollisionType::View){
             self.scout.discover_enemy(self.enemy.get_position());
@@ -94,11 +107,11 @@ impl Game {
         self.player.set_target(target_position)
     }
 
-    pub fn set_scout_target(&mut self, target_position: &vec2d::Vec2D){
+    pub fn set_scout_mission(&mut self, target_position: &vec2d::Vec2D){
         if *self.scout.get_status() == ScoutStatus::Idle {
             self.scout.set_status(ScoutStatus::GoingToTarget);
             self.scout.set_position(self.player.get_position());
-            self.scout.set_target(target_position, self.player.get_position());
+            self.scout.set_mission(target_position, self.player.get_position());
         }
     }
 

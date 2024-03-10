@@ -5,8 +5,7 @@ use crate::vec2d;
 pub enum ScoutStatus {
     Idle,
     GoingToTarget,
-    GoingToPlayer,
-    WaitingForPlayer
+    GoingToPlayer
 }
 
 pub struct Scout {
@@ -41,7 +40,6 @@ impl Scout {
                 },
                 ScoutStatus::GoingToPlayer => {
                     self.character.unset_target();
-                    self.status = ScoutStatus::WaitingForPlayer;
                 },
                 _ => ()
             }
@@ -49,8 +47,12 @@ impl Scout {
         }
     }
 
-    pub fn set_target(&mut self, target_position: &vec2d::Vec2D, player_position: &vec2d::Vec2D){
+    pub fn set_mission(&mut self, target_position: &vec2d::Vec2D, player_position: &vec2d::Vec2D){
         self.player_position = *player_position;
+        self.character.set_target(target_position);
+    }
+
+    pub fn set_target(&mut self, target_position: &vec2d::Vec2D){
         self.character.set_target(target_position);
     }
 
