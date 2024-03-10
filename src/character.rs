@@ -4,7 +4,8 @@ use crate::collision;
 #[derive(PartialEq)]
 pub enum CharacterStatus {
     Idle,
-    Moving
+    Moving,
+    Fighting
 }
 
 pub struct Character {
@@ -39,8 +40,17 @@ impl Character {
         self.position.x += self.speed.x * dt;
         self.position.y += self.speed.y * dt;
 
+        match self.status {
+            CharacterStatus::Idle => self.health = num::clamp(self.health + dt, 0.0, 100.0),
+            CharacterStatus::Moving | CharacterStatus::Fighting => self.health = num::clamp(self.health - dt, 0.0, 100.0),
+        }
+
+        if collision::are_positions_colliding(&self.position, &self.known_enemy_position, collision::CollisionType::View){
+            self.has_discovered_enemy = false;
+        }
+
         if self.has_reached_target(){
-            self.unset_target();
+            self.rest();
         }
     }
 
@@ -48,7 +58,7 @@ impl Character {
         collision::are_positions_colliding(&self.position, &self.target_position, collision::CollisionType::Touch)
     }
 
-    pub fn unset_target(&mut self){
+    pub fn rest(&mut self){
         self.status = CharacterStatus::Idle;
         self.speed.x = 0.0;
         self.speed.y = 0.0;
@@ -97,7 +107,7 @@ impl Character {
         self.has_discovered_enemy
     }
 
-    pub fn hurt(&mut self, health_loss: &f64) {
+    pub fn hurt(&mut self, health_loss: f64) {
         self.health -= health_loss;
     }
 
@@ -107,5 +117,10 @@ impl Character {
 
     pub fn get_status(&self) -> &CharacterStatus {
         &self.status
+    }
+
+    pub fn fight(&mut self) {
+        self.rest();
+        self.status = CharacterStatus::Fighting;
     }
 }

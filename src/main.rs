@@ -10,7 +10,7 @@ use piston::input::{Button, ButtonArgs, ButtonEvent, ButtonState, Key};
 use piston::input::{ RenderEvent, UpdateArgs, UpdateEvent};
 use piston::{ MouseButton, MouseCursorEvent};
 use vec2d::Vec2D;
-use graphics::{Context, math};
+use graphics::{math, rectangle, Context};
 use crate::graphics::{ImageSize, Transformed};
 use crate::scout::ScoutStatus;
 use piston_window::prelude::*;
@@ -24,7 +24,7 @@ mod game;
 
 use crate::character::CharacterStatus;
 
-const CAMERA_MOVE_SPEED: f64 = 100.0;
+const CAMERA_MOVE_SPEED: f64 = 200.0;
 
 pub struct App {
     cursor_position: vec2d::Vec2D,
@@ -89,7 +89,11 @@ impl App {
             image(&self.player_renderable.texture, player_transform, gl);
 
             let player_health = game.get_player().get_health();
-            text([0.0, 0.0, 0.0, 1.0], 32, &format!("Player health : {player_health}"), &mut self.font, c.transform.trans(self.camera_transform.x * 0.1, self.camera_transform.y * 1.9), gl).unwrap();
+            text([0.0, 0.0, 0.0, 1.0], 32, &format!("Health"), &mut self.font, c.transform.trans(self.camera_transform.x * 0.1, self.camera_transform.y * 1.9), gl).unwrap();
+            let health_rectangle = rectangle::rectangle_by_corners(0.0, 0.0, *player_health, 20.0);
+            let health_loss_rectange = rectangle::rectangle_by_corners(0.0, 0.0, 100.0 - *player_health, 20.0);
+            rectangle([0.0, 0.8, 0.0, 1.0], health_rectangle, c.transform.trans(self.camera_transform.x * 0.3, (self.camera_transform.y * 1.9) - 20.0), gl);
+            rectangle([0.8, 0.0, 0.0, 1.0], health_loss_rectange, c.transform.trans((self.camera_transform.x * 0.3) + *player_health, (self.camera_transform.y * 1.9) - 20.0), gl);
 
             if self.god_mode {
                 let enemy_health = game.get_enemy().get_health();

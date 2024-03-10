@@ -30,8 +30,13 @@ impl Game {
         self.enemy.update_position(dt);
 
 
+        let enemy_health = *self.enemy.get_health();
+        if enemy_health < 75.0 {
+            self.enemy.rest();
+        }
+
         // enemy behaviour
-        if *self.enemy.get_status() != CharacterStatus::Moving {
+        if *self.enemy.get_status() == CharacterStatus::Idle && *self.enemy.get_health() > 90.0 {
             self.enemy.set_target(&vec2d::Vec2D{ x: (rand::random::<f64>() -0.5) * 1000.0, y: (rand::random::<f64>() - 0.5) * 1000.0});
         }
 
@@ -66,11 +71,7 @@ impl Game {
 
         
 
-        let is_enemy_visible = collision::are_positions_colliding(self.player.get_position(), self.enemy.get_position(), collision::CollisionType::View);
-        self.enemy.set_visible(is_enemy_visible);
-        if is_enemy_visible {
-            self.player.discover_enemy(self.enemy.get_position());
-        }
+        // scout/enemy interaction
 
         if collision::are_positions_colliding(self.scout.get_position(), self.enemy.get_position(), collision::CollisionType::View){
             self.scout.discover_enemy(self.enemy.get_position());
@@ -78,15 +79,24 @@ impl Game {
 
         // player/enemy interaction
 
+        let is_enemy_visible = collision::are_positions_colliding(self.player.get_position(), self.enemy.get_position(), collision::CollisionType::View);
+        self.enemy.set_visible(is_enemy_visible);
+        if is_enemy_visible {
+            self.player.discover_enemy(self.enemy.get_position());
+
+            if enemy_health > 50.0 {
+                self.enemy.set_target(self.player.get_position());
+            }
+        }
+
         if collision::are_positions_colliding(self.player.get_position(), self.enemy.get_position(), collision::CollisionType::Fight){
-            if *self.player.get_status() == CharacterStatus::Idle {
-                self.enemy.hurt(dt); 
+            if *self.player.get_status() == CharacterStatus::Idle{
+                self.player.fight();
             }
-            if *self.enemy.get_status() == CharacterStatus::Idle {
-                self.player.hurt(dt);
-            }
-            
-            
+            self.enemy.fight();
+
+            self.player.hurt(dt * 2.0 * enemy_health / 100.0);
+            self.enemy.hurt(dt * 2.0 * self.player.get_health() / 100.0);
         }
         
     }

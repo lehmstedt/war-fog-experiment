@@ -39,7 +39,7 @@ impl Scout {
                     self.status = ScoutStatus::GoingToPlayer;
                 },
                 ScoutStatus::GoingToPlayer => {
-                    self.character.unset_target();
+                    self.character.rest();
                 },
                 _ => ()
             }
@@ -66,7 +66,7 @@ impl Scout {
 
     pub fn set_idle(&mut self) {
         self.status = ScoutStatus::Idle;
-        self.character.unset_target();
+        self.character.rest();
     }
 
     pub fn set_visible(&mut self, visible: bool){
