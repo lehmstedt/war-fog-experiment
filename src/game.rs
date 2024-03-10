@@ -3,6 +3,7 @@ use crate::scout;
 use crate::scout::ScoutStatus;
 use crate::vec2d;
 use crate::collision;
+use crate::character::CharacterStatus;
 
 pub struct Game {
     player: character::Character,
@@ -17,7 +18,7 @@ pub fn new() -> Game{
         enemy: character::new()
     };
 
-    game.enemy.set_position(&vec2d::Vec2D{ x: (rand::random::<f64>() -0.5) * 500.0, y: (rand::random::<f64>() - 0.5) * 500.0});
+    game.enemy.set_position(&vec2d::Vec2D{ x: (rand::random::<f64>() -0.5) * 1000.0, y: (rand::random::<f64>() - 0.5) * 1000.0});
 
     return game;   
 }
@@ -28,24 +29,32 @@ impl Game {
         self.scout.update_position(dt);
         self.enemy.update_position(dt);
 
-        if !self.enemy.is_target_set(){
-            self.enemy.set_target(&vec2d::Vec2D{ x: (rand::random::<f64>() -0.5) * 500.0, y: (rand::random::<f64>() - 0.5) * 500.0});
+
+        // enemy behaviour
+        if *self.enemy.get_status() != CharacterStatus::Moving {
+            self.enemy.set_target(&vec2d::Vec2D{ x: (rand::random::<f64>() -0.5) * 1000.0, y: (rand::random::<f64>() - 0.5) * 1000.0});
         }
 
-        if *self.scout.get_status() == ScoutStatus::ReceivingMission && !collision::are_positions_colliding(self.player.get_position(),self.scout.get_position(),collision::CollisionType::ScoutRetrieving){
-            self.scout.set_status(ScoutStatus::GoingToTarget);
-        }
-        if *self.scout.get_status() == ScoutStatus::GoingToTarget && collision::are_positions_colliding(self.player.get_position(),self.scout.get_position(),collision::CollisionType::ScoutRetrieving){
-            self.scout.set_idle();
+        // player/scout interaction
+        if collision::are_positions_colliding(self.player.get_position(),self.scout.get_position(),collision::CollisionType::Touch){
+            match *self.scout.get_status() {
+                ScoutStatus::GoingToPlayer | ScoutStatus::WaitingForPlayer => {
+                    self.scout.set_idle();
+
+                    if self.scout.has_enemy_position_to_deliver(){
+                        let enemy_position = self.scout.deliver_enemy_position();
+                        self.player.discover_enemy(enemy_position);
+                    }
+                },
+                _ => ()
+            }
+            
         }
 
         let is_scout_visible = collision::are_positions_colliding(self.player.get_position(), self.scout.get_position(), collision::CollisionType::View);
         self.scout.set_visible(is_scout_visible);
 
-        if self.scout.has_enemy_position_to_deliver() && collision::are_positions_colliding( self.player.get_position(), self.scout.get_position(), collision::CollisionType::TargetReaching){
-            let enemy_position = self.scout.deliver_enemy_position();
-            self.player.discover_enemy(enemy_position);
-        }
+        
 
         let is_enemy_visible = collision::are_positions_colliding(self.player.get_position(), self.enemy.get_position(), collision::CollisionType::View);
         self.enemy.set_visible(is_enemy_visible);
@@ -54,9 +63,17 @@ impl Game {
             self.scout.discover_enemy(self.enemy.get_position());
         }
 
+        // player/enemy interaction
+
         if collision::are_positions_colliding(self.player.get_position(), self.enemy.get_position(), collision::CollisionType::Fight){
-            self.player.hurt(dt);
-            self.enemy.hurt(dt); 
+            if *self.player.get_status() == CharacterStatus::Idle {
+                self.enemy.hurt(dt); 
+            }
+            if *self.enemy.get_status() == CharacterStatus::Idle {
+                self.player.hurt(dt);
+            }
+            
+            
         }
         
     }
@@ -79,14 +96,10 @@ impl Game {
 
     pub fn set_scout_target(&mut self, target_position: &vec2d::Vec2D){
         if *self.scout.get_status() == ScoutStatus::Idle {
-            self.scout.set_status(ScoutStatus::ReceivingMission);
+            self.scout.set_status(ScoutStatus::GoingToTarget);
             self.scout.set_position(self.player.get_position());
             self.scout.set_target(target_position, self.player.get_position());
         }
-    }
-
-    pub fn is_player_target_visible(&self) -> bool {
-        self.player.is_target_set()
     }
 
     pub fn is_enemy_visible(&self) -> bool {

@@ -12,6 +12,7 @@ use piston::{ MouseButton, MouseCursorEvent};
 use vec2d::Vec2D;
 use graphics::{Context, math};
 use crate::graphics::{ImageSize, Transformed};
+use crate::scout::ScoutStatus;
 use piston_window::prelude::*;
 use piston_window::*;
 
@@ -20,6 +21,8 @@ mod collision;
 mod scout;
 mod vec2d;
 mod game;
+
+use crate::character::CharacterStatus;
 
 const CAMERA_MOVE_SPEED: f64 = 100.0;
 
@@ -56,13 +59,13 @@ impl App {
             let map_transform = calculate_transform(&self.map_renderable, &c, &self.camera_position, &self.camera_transform);
             image(&self.map_renderable.texture, map_transform, gl);
 
-            if game.get_scout().is_visible() || self.god_mode {
+            if (game.get_scout().is_visible() || self.god_mode) && *game.get_scout().get_status() != ScoutStatus::Idle {
                 self.scout_renderable.position = *game.get_scout().get_position();
                 let scout_transform = calculate_transform(&self.scout_renderable, &c, &self.camera_position, &self.camera_transform);
                 image(&self.scout_renderable.texture, scout_transform, gl);
             }
 
-            if game.is_player_target_visible() || self.god_mode {
+            if *game.get_player().get_status() == CharacterStatus::Moving || self.god_mode {
                 self.player_target_renderable.position = *game.get_player_target_position();
                 let target_transform = calculate_transform(&self.player_target_renderable, &c, &self.camera_position, &self.camera_transform);
                 image(&self.player_target_renderable.texture, target_transform, gl);
@@ -87,8 +90,14 @@ impl App {
             let player_health = game.get_player().get_health();
             text([0.0, 0.0, 0.0, 1.0], 32, &format!("Player health : {player_health}"), &mut self.font, c.transform.trans(self.camera_transform.x * 0.1, self.camera_transform.y * 1.9), gl).unwrap();
 
-            let enemy_health = game.get_enemy().get_health();
-            text([0.0, 0.0, 0.0, 1.0], 32, &format!("Enemy health : {enemy_health}"), &mut self.font, c.transform.trans(self.camera_transform.x * 1.5, self.camera_transform.y * 1.9), gl).unwrap();
+            let scout_status = game.get_scout().get_status();
+            println!("Scout status : {:?}", scout_status);
+            if self.god_mode {
+                let enemy_health = game.get_enemy().get_health();
+                text([0.0, 0.0, 0.0, 1.0], 32, &format!("Enemy health : {enemy_health}"), &mut self.font, c.transform.trans(self.camera_transform.x * 1.5, self.camera_transform.y * 1.9), gl).unwrap(); 
+            }
+
+            
 
             self.font.factory.encoder.flush(device);
         });

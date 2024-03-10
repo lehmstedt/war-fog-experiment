@@ -4,8 +4,9 @@ use crate::vec2d;
 #[derive(PartialEq, Debug)]
 pub enum ScoutStatus {
     Idle,
-    ReceivingMission,
-    GoingToTarget
+    GoingToTarget,
+    GoingToPlayer,
+    WaitingForPlayer
 }
 
 pub struct Scout {
@@ -32,13 +33,23 @@ impl Scout {
         self.character.update_position(&dt);
 
         if self.character.has_reached_target(){
-            self.character.set_target(&self.player_position);
+
+            match self.status {
+                ScoutStatus::GoingToTarget => {
+                    self.character.set_target(&self.player_position);
+                    self.status = ScoutStatus::GoingToPlayer;
+                },
+                ScoutStatus::GoingToPlayer => {
+                    self.character.unset_target();
+                    self.status = ScoutStatus::WaitingForPlayer;
+                },
+                _ => ()
+            }
+            
         }
     }
 
     pub fn set_target(&mut self, target_position: &vec2d::Vec2D, player_position: &vec2d::Vec2D){
-
-        self.status = ScoutStatus::Idle;
         self.player_position = *player_position;
         self.character.set_target(target_position);
     }
