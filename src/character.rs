@@ -42,10 +42,6 @@ impl Character {
         if self.has_reached_target(){
             self.unset_target();
         }
-
-        if self.has_discovered_enemy && collision::are_positions_colliding(&self.position, &self.known_enemy_position, collision::CollisionType::View){
-            self.has_discovered_enemy = false;
-        }
     }
 
     pub fn has_reached_target(&mut self) -> bool{

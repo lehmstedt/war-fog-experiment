@@ -80,7 +80,8 @@ impl App {
             else if game.is_enemy_discovered() {
                 self.enemy_renderable.position = *game.get_discovered_enemy_position();
                 let enemy_transform = calculate_transform(&self.enemy_renderable, &c, &self.camera_position, &self.camera_transform);
-                image(&self.enemy_renderable.texture, enemy_transform, gl);
+                let transparent_image = Image::new().color([1.0, 1.0, 1.0, 0.5]);
+                transparent_image.draw(&self.enemy_renderable.texture, &DrawState::default(), enemy_transform, gl);
             }
 
             self.player_renderable.position = *game.get_player_position();
@@ -90,8 +91,6 @@ impl App {
             let player_health = game.get_player().get_health();
             text([0.0, 0.0, 0.0, 1.0], 32, &format!("Player health : {player_health}"), &mut self.font, c.transform.trans(self.camera_transform.x * 0.1, self.camera_transform.y * 1.9), gl).unwrap();
 
-            let scout_status = game.get_scout().get_status();
-            println!("Scout status : {:?}", scout_status);
             if self.god_mode {
                 let enemy_health = game.get_enemy().get_health();
                 text([0.0, 0.0, 0.0, 1.0], 32, &format!("Enemy health : {enemy_health}"), &mut self.font, c.transform.trans(self.camera_transform.x * 1.5, self.camera_transform.y * 1.9), gl).unwrap(); 
