@@ -21,6 +21,7 @@ mod collision;
 mod scout;
 mod vec2d;
 mod game;
+mod enemy;
 
 use crate::character::CharacterStatus;
 

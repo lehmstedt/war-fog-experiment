@@ -22,23 +22,23 @@ pub struct Character {
     status: CharacterStatus
 }
 
-pub fn new() -> Character{
-    Character {
-        position: vec2d::new(),
-        speed: vec2d::new(),
-        target_position: vec2d::new(),
-        max_speed: CHARACTER_SPEED,
-        is_visible: false,
-        known_enemy_position: vec2d::new(),
-        has_discovered_enemy: false,
-        health: 100.0,
-        status: CharacterStatus::Idle
-    }
-}
-
 impl Character {
 
-    pub fn update_position(&mut self, dt: &f64){
+    pub fn new() -> Self{
+        Self {
+            position: vec2d::new(),
+            speed: vec2d::new(),
+            target_position: vec2d::new(),
+            max_speed: CHARACTER_SPEED,
+            is_visible: false,
+            known_enemy_position: vec2d::new(),
+            has_discovered_enemy: false,
+            health: 100.0,
+            status: CharacterStatus::Idle
+        }
+    }
+
+    pub fn update(&mut self, dt: &f64){
         self.position.x += self.speed.x * dt;
         self.position.y += self.speed.y * dt;
 

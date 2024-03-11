@@ -1,4 +1,5 @@
 use crate::character;
+use crate::enemy;
 use crate::scout;
 use crate::scout::ScoutStatus;
 use crate::vec2d;
@@ -17,9 +18,9 @@ impl Game {
 
     pub fn new() -> Game{
         let mut game = Game {
-            player: character::new(),
+            player: character::Character::new(),
             scout: scout::Scout::new(),
-            enemy: character::new()
+            enemy: enemy::Enemy::new()
         };
     
         game.enemy.set_position(&vec2d::Vec2D{ x: (rand::random::<f64>() -0.5) * 1000.0, y: (rand::random::<f64>() - 0.5) * 1000.0});
@@ -28,19 +29,14 @@ impl Game {
     }
 
     pub fn update(&mut self, dt: &f64){
-        self.player.update_position(dt);
-        self.scout.update_position(dt);
-        self.enemy.update_position(dt);
+        self.player.update(dt);
+        self.scout.update(dt);
+        self.enemy.update(dt);
 
 
         let enemy_health = *self.enemy.get_health();
         if enemy_health < 75.0 {
             self.enemy.rest();
-        }
-
-        // enemy behaviour
-        if *self.enemy.get_status() == CharacterStatus::Idle && *self.enemy.get_health() > 90.0 {
-            self.enemy.set_target(&vec2d::Vec2D{ x: (rand::random::<f64>() -0.5) * 1000.0, y: (rand::random::<f64>() - 0.5) * 1000.0});
         }
 
         // player/scout interaction

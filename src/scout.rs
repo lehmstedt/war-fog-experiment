@@ -19,9 +19,9 @@ pub struct Scout {
 
 impl Scout {
 
-    pub fn new() -> Scout {
+    pub fn new() -> Self {
         let mut new_scout = Self {
-            character: character::new(),
+            character: character::Character::new(),
             player_position: vec2d::new(),
             has_enemy_position_to_deliver: false,
             status: ScoutStatus::Idle
@@ -33,9 +33,9 @@ impl Scout {
     
     }
 
-    pub fn update_position(&mut self, dt: &f64){
+    pub fn update(&mut self, dt: &f64){
 
-        self.character.update_position(&dt);
+        self.character.update(&dt);
 
         if self.character.has_reached_target(){
 
