@@ -11,19 +11,22 @@ pub struct Game {
     enemy: character::Character
 }
 
-pub fn new() -> Game{
-    let mut game = Game {
-        player: character::new(),
-        scout: scout::new(),
-        enemy: character::new()
-    };
 
-    game.enemy.set_position(&vec2d::Vec2D{ x: (rand::random::<f64>() -0.5) * 1000.0, y: (rand::random::<f64>() - 0.5) * 1000.0});
-
-    return game;   
-}
 
 impl Game {
+
+    pub fn new() -> Game{
+        let mut game = Game {
+            player: character::new(),
+            scout: scout::new(),
+            enemy: character::new()
+        };
+    
+        game.enemy.set_position(&vec2d::Vec2D{ x: (rand::random::<f64>() -0.5) * 1000.0, y: (rand::random::<f64>() - 0.5) * 1000.0});
+    
+        return game   
+    }
+
     pub fn update(&mut self, dt: &f64){
         self.player.update_position(dt);
         self.scout.update_position(dt);
@@ -147,6 +150,10 @@ impl Game {
 
     pub fn get_scout(&self) -> &scout::Scout {
         &self.scout
+    }
+
+    pub fn is_over(&self) -> bool {
+        *self.player.get_health() <= 0.0 || *self.enemy.get_health() <= 0.0
     }
 
 

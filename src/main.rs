@@ -10,7 +10,7 @@ use piston::input::{Button, ButtonArgs, ButtonEvent, ButtonState, Key};
 use piston::input::{ RenderEvent, UpdateArgs, UpdateEvent};
 use piston::{ MouseButton, MouseCursorEvent};
 use vec2d::Vec2D;
-use graphics::{math, rectangle, Context};
+use graphics::{clear, math, rectangle, Context};
 use crate::graphics::{ImageSize, Transformed};
 use crate::scout::ScoutStatus;
 use piston_window::prelude::*;
@@ -51,10 +51,21 @@ impl App {
     fn render(&mut self, event: &Event, game: &game::Game) {
 
         self.window.draw_2d(event, |c, gl, device| {
-            clear([1.0, 1.0, 1.0, 1.0], gl);
+
+            self.font.factory.encoder.flush(device);
 
             self.camera_transform.x = event.render_args().unwrap().window_size[0] / 2.0;
             self.camera_transform.y = event.render_args().unwrap().window_size[1] / 2.0;
+
+            if game.is_over() {
+                clear([0.0, 0.0, 0.0, 1.0], gl);
+                let game_over_text = if *game.get_player().get_health() > 0.0 { "You won" } else { "You lose"};
+                text([1.0, 1.0, 1.0, 1.0], 64, &game_over_text, &mut self.font, c.transform.trans(self.camera_transform.x, self.camera_transform.y), gl).unwrap();
+                return;
+            }
+            clear([1.0, 1.0, 1.0, 1.0], gl);
+
+            
 
             let map_transform = calculate_transform(&self.map_renderable, &c, &self.camera_position, &self.camera_transform);
             image(&self.map_renderable.texture, map_transform, gl);
@@ -100,9 +111,6 @@ impl App {
                 text([0.0, 0.0, 0.0, 1.0], 32, &format!("Enemy health : {enemy_health}"), &mut self.font, c.transform.trans(self.camera_transform.x * 1.5, self.camera_transform.y * 1.9), gl).unwrap(); 
             }
 
-            
-
-            self.font.factory.encoder.flush(device);
         });
     }
 
@@ -194,7 +202,7 @@ fn main() {
         .build()
         .unwrap();
 
-    let mut game = game::new();
+    let mut game = game::Game::new();
 
     let mut texture_context = TextureContext {
         factory: window.factory.clone(),
@@ -239,7 +247,7 @@ fn main() {
         font
     };
 
-    while let Some(e) = app.window.next(){
+    while let Some(e) = app.window.next() {
 
         app.render(&e, &game);
         
@@ -254,4 +262,5 @@ fn main() {
             app.update_cursor_position(&args);
         }
     }
+    
 }
