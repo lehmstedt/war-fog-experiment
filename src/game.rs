@@ -18,7 +18,7 @@ impl Game {
     pub fn new() -> Game{
         let mut game = Game {
             player: character::new(),
-            scout: scout::new(),
+            scout: scout::Scout::new(),
             enemy: character::new()
         };
     

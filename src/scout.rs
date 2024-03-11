@@ -1,6 +1,8 @@
 use crate::character;
 use crate::vec2d;
 
+const SCOUT_SPEED: f64 = 75.0;
+
 #[derive(PartialEq, Debug)]
 pub enum ScoutStatus {
     Idle,
@@ -15,17 +17,21 @@ pub struct Scout {
     status: ScoutStatus
 }
 
-pub fn new() -> Scout {
-    Scout {
-        character: character::new(),
-        player_position: vec2d::new(),
-        has_enemy_position_to_deliver: false,
-        status: ScoutStatus::Idle
-    }
-
-}
-
 impl Scout {
+
+    pub fn new() -> Scout {
+        let mut new_scout = Self {
+            character: character::new(),
+            player_position: vec2d::new(),
+            has_enemy_position_to_deliver: false,
+            status: ScoutStatus::Idle
+        };
+
+        new_scout.character.set_max_speed(SCOUT_SPEED);
+
+        new_scout
+    
+    }
 
     pub fn update_position(&mut self, dt: &f64){
 

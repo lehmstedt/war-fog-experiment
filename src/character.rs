@@ -1,6 +1,8 @@
 use crate::vec2d;
 use crate::collision;
 
+const CHARACTER_SPEED: f64 = 50.0;
+
 #[derive(PartialEq)]
 pub enum CharacterStatus {
     Idle,
@@ -25,7 +27,7 @@ pub fn new() -> Character{
         position: vec2d::new(),
         speed: vec2d::new(),
         target_position: vec2d::new(),
-        max_speed: 50.0,
+        max_speed: CHARACTER_SPEED,
         is_visible: false,
         known_enemy_position: vec2d::new(),
         has_discovered_enemy: false,
@@ -122,5 +124,9 @@ impl Character {
     pub fn fight(&mut self) {
         self.rest();
         self.status = CharacterStatus::Fighting;
+    }
+
+    pub fn set_max_speed(&mut self, speed: f64) {
+        self.max_speed = speed;
     }
 }
